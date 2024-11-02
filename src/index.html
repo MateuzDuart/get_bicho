@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <script type="module" src="main.js"></script>
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .container {
+      height: 90%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    #progress-section {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #f8f9fa;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: transform 0.3s ease;
+    }
+
+    #progress-section.minimized {
+      transform: translateY(100%);
+    }
+
+    .progress-bar-container {
+      flex-grow: 1;
+      margin-right: 15px;
+    }
+
+    .progress {
+      width: 90%;
+      height: 30px;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+    }
+
+    .progress-bar::after {
+      content: attr(data-progress) "%";
+      position: absolute;
+      right: 10px;
+      color: white;
+      font-weight: bold;
+    }
+
+    .tips-container {
+      flex-grow: 2;
+      text-align: left;
+      position: absolute;
+      left: 10px;
+      color: white;
+      z-index: 10;
+      font-size: 14px;
+      top: 3px;
+    }
+
+    #toggle-btn,
+    #max-btn {
+      background: none;
+      border: none;
+      color: #007bff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #max-btn {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      display: none; /* O botão só aparece quando minimizado */
+    }
+
+  </style>
+  <title>Get Bichos</title>
+</head>
+
+<body>
+  <div class="container mt-4">
+    <h1 class="text-center mb-4">Get Bichos</h1>
+
+    <!-- Selector for betting house -->
+    <div class="mb-4">
+      <label for="house-selector" class="form-label">Casa de Aposta:</label>
+      <select class="form-select" id="house-selector" aria-label="casa de aposta" onchange="get_table_info()">
+        <option value="invalid" selected>Escolha uma casa de aposta</option>
+        <!-- <option value="15" house_name="aaaa">One</option>
+        <option value="bbbbb">Two</option>
+        <option value="3">Three</option> -->
+      </select>
+    </div>
+
+    <!-- Header displaying information -->
+    <header class="info-header">
+      <div>Quantidade de linhas: <span id="row-count">(não carregado)</span></div>
+      <div>Última atualização: <span id="last-updated">(não carregado)</span></div>
+    </header>
+
+    <!-- Data actions section -->
+    <section id="catch-data-actions" class="mt-4">
+      <h4>Atualizar</h4>
+      <div class="form-check form-switch mb-3">
+        <input class="form-check-input" type="checkbox" id="all-time-switch">
+        <label class="form-check-label" for="all-time-switch">Pegar todo histórico</label>
+      </div>
+
+      <input type="button" class="btn btn-primary" value="Atualizar (casa selecionada)" onclick="window.get_bicho_data()">
+      <input type="button" class="btn btn-secondary" value="Atualizar (todas as casas)"
+        onclick="window.get_all_houses_bicho_data()">
+    </section>
+
+    <!-- Data export section -->
+    <section id="show-data-action" class="mt-4">
+      <input type="button" class="btn btn-success" value="Criar CSV (Casa selecionada)" onclick="window.export_csv()">
+      <input type="button" class="btn btn-secondary" value="Criar CSV (Todas as casas)">
+    </section>
+  </div>
+
+  <!-- Progress Section -->
+  <div id="progress-section">
+    <button id="toggle-btn" onclick="toggleProgress()">Minimizar</button>
+    <div class="progress-bar-container">
+      <div class="progress position-relative">
+        <div id="progress-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0"
+          aria-valuemin="0" aria-valuemax="100" data-progress="0"></div>
+        <div class="tips-container">
+          <span class="tips-text" id="tips-text">Dica: Mantenha o sistema atualizado!</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botão para maximizar -->
+  <button id="max-btn" onclick="toggleProgress()">Maximizar</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+  <script>
+    let progressVisible = true;
+    let currentTipIndex = 0;
+    let tips = ["Dica 1: Mantenha o sistema atualizado!", "Dica 2: Verifique a conexão com a internet!",
+      "Dica 3: Utilize o modo noturno para menos cansaço visual."
+    ];
+
+    // Alterna a visibilidade da barra de progresso
+    function toggleProgress() {
+      const progressSection = document.getElementById('progress-section');
+      const maxBtn = document.getElementById('max-btn');
+      
+      if (progressVisible) {
+        progressSection.classList.add('minimized');
+        document.getElementById('toggle-btn').style.display = 'none';
+        maxBtn.style.display = 'block'; // Exibe o botão de maximizar
+      } else {
+        progressSection.classList.remove('minimized');
+        document.getElementById('toggle-btn').style.display = 'inline';
+        maxBtn.style.display = 'none'; // Esconde o botão de maximizar
+      }
+      progressVisible = !progressVisible;
+    }
+
+    // Atualiza o progresso
+    function updateProgress(progress) {
+      const progressBar = document.getElementById('progress-bar');
+      progressBar.style.width = progress + '%';
+      progressBar.setAttribute('aria-valuenow', progress);
+      progressBar.setAttribute('data-progress', progress);
+    }
+
+    // Função para trocar dicas a cada 5 segundos
+    function rotateTips(customTips = tips) {
+      setInterval(() => {
+        currentTipIndex = (currentTipIndex + 1) % customTips.length;
+        document.getElementById('tips-text').textContent = customTips[currentTipIndex];
+      }, 5000);
+    }
+    
+  </script>
+</body>
+
+</html>

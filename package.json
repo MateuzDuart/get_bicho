@@ -1,0 +1,23 @@
+{
+  "name": "get_bicho",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev --ignore \"**/*.db\""
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-dialog": "^2.0.1",
+    "@tauri-apps/plugin-shell": "^2"
+  },
+  "devDependencies": {
+    "@tauri-apps/api": "^2.0.3",
+    "@tauri-apps/cli": "^2.0.4",
+    "typescript": "^5.2.2",
+    "vite": "^5.3.1"
+  }
+}

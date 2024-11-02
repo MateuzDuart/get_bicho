@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="src/styles.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
+  <script type="module" src="src/main.js"></script>
+  <title>Get Bichos</title>
+</head>
+
+<body>
+  <div class="container mt-4">
+    <h1 class="text-center mb-4">Get Bichos</h1>
+
+    <!-- Selector for betting house -->
+    <div class="mb-4">
+      <label for="house-selector" class="form-label">Casa de Aposta:</label>
+      <select class="form-select" id="house-selector" aria-label="casa de aposta" onchange="get_table_info()">
+        <option value="invalid" selected>Escolha uma casa de aposta</option>
+      </select>
+    </div>
+
+    <div class="dots">
+      <div class="dot active" onclick="goToSlide(0)"></div>
+      <div class="dot" onclick="goToSlide(1)"></div>
+      <div class="dot" onclick="goToSlide(2)"></div>
+    </div>
+
+    <div class="slide-container">
+      <div class="slide-content" id="slideContent">
+        <!-- Slide 1 -->
+        <div class="slide">
+          <header class="info-header">
+            <div>Quantidade de linhas: <span id="row-count">(não carregado)</span></div>
+            <div>Última atualização: <span id="last-updated">(não carregado)</span></div>
+          </header>
+
+          <section id="catch-data-actions" class="mt-4">
+            <h4 class="text-center">Atualizar</h4>
+            <div class="d-flex flex-column mb-3">
+              <!-- Primeiro switch -->
+              <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="all-time-switch">
+                  <label class="form-check-label" for="all-time-switch">Pegar todo histórico</label>
+              </div>
+          
+              <!-- Segundo switch -->
+              <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="force-update">
+                  <label class="form-check-label" for="force-update">Forçar atualização</label>
+              </div>
+          </div>
+            <input type="button" class="btn btn-primary" value="Atualizar (casa selecionada)"
+              onclick="window.get_bicho_data()">
+          </section>
+
+          <section id="show-data-action" class="mt-4">
+            <input type="button" class="btn btn-success" value="Criar CSV (Casa selecionada)"
+              onclick="window.export_csv()">
+          </section>
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="slide">
+          <div class="heade-container">
+            <h4>Grupos</h4>
+            <button class="btn btn-primary mb-3" onclick="openGroupForm('create')">Criar Grupo</button>
+          </div>
+
+          <table class="table" id="groupTable">
+            <thead>
+              <tr>
+                <th>Horário</th>
+                <th>Prêmio</th>
+                <th>Grupo</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Linhas serão preenchidas pela função renderTable() -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Slide 3 -->
+        <div class="slide">
+          <div class="heade-container">
+            <h4>Recomendações</h4>
+          </div>
+          <table class="table" id="recomendationTable">
+            <thead>
+              <tr>
+                <th class="w-25">Sequência de Derrota</th>
+                <th class="w-10">Horário</th>
+                <th class="w-10">Prêmio</th>
+                <th class="w-45">Grupo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Linhas serão preenchidas pela função renderTable() -->
+            </tbody>
+          </table>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para criação e edição de grupos -->
+  <div class="modal fade" id="createGroupModal" tabindex="-1" aria-labelledby="createGroupModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createGroupModalLabel">Criar Novo Grupo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="createGroupForm">
+            <input type="hidden" id="modalType">
+            <input type="hidden" id="editGroupId">
+            <div class="mb-3">
+              <label for="groupHour" class="form-label">Horário</label>
+              <select class="form-control" id="groupHour"></select>
+            </div>
+            <div class="mb-3">
+              <label for="groupPrize" class="form-label">Prêmio</label>
+              <select class="form-control" id="groupPrize"></select>
+            </div>
+            <div class="mb-3">
+              <label for="groupNumbers" class="form-label">Grupo (números separados por vírgula)</label>
+              <input type="text" class="form-control" id="groupNumbers" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+
+    function goToSlide(slideIndex) {
+      const slideContent = document.getElementById('slideContent');
+      const dots = document.querySelectorAll('.dot');
+
+      currentSlide = slideIndex;
+      slideContent.style.transform = `translateX(-${slideIndex * 100}%)`;
+      dots.forEach(dot => dot.classList.remove('active'));
+      dots[slideIndex].classList.add('active');
+    }
+
+    async function openGroupForm(type, group = null, element = null) {
+      document.getElementById('modalType').value = type;
+
+      const groupHourSelect = document.getElementById('groupHour');
+      const groupPrizeSelect = document.getElementById('groupPrize');
+      groupHourSelect.innerHTML = "";
+      groupPrizeSelect.innerHTML = "";
+
+      const select_element = document.getElementById("house-selector");
+      const house_name = select_element.options[select_element.selectedIndex].innerHTML;
+
+      const hours = await window.get_hours(house_name);
+      hours.forEach(hour => {
+        const option = document.createElement("option");
+        option.value = hour;
+        option.textContent = hour;
+        groupHourSelect.appendChild(option);
+      });
+
+      const places = await window.get_places(house_name);
+      places.forEach(place => {
+        const option = document.createElement("option");
+        option.value = place;
+        option.textContent = place;
+        groupPrizeSelect.appendChild(option);
+      });
+
+      if (type === 'edit' && group) {
+        console.log(group)
+        document.getElementById('createGroupModalLabel').textContent = "Editar Grupo";
+        document.getElementById('editGroupId').value = group.id;
+        document.getElementById('groupHour').value = group.hour;
+        document.getElementById('groupPrize').value = group.place;
+        document.getElementById('groupNumbers').value = group.group;
+      } else {
+        document.getElementById('createGroupModalLabel').textContent = "Criar Novo Grupo";
+        document.getElementById('createGroupForm').reset();
+      }
+
+      const modal = new bootstrap.Modal(document.getElementById('createGroupModal'), {
+        backdrop: 'static'
+      });
+      modal.show();
+    }
+
+    document.getElementById('createGroupForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const hour = document.getElementById('groupHour').value;
+      const prize = document.getElementById('groupPrize').value;
+      const type = document.getElementById('modalType').value;
+      const groupNumbers = document.getElementById('groupNumbers').value.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
+
+      const select_element = document.getElementById("house-selector");
+      const house_name = select_element.options[select_element.selectedIndex].innerHTML;
+
+      if (type === "create") {
+        await window.add_group(house_name, { hour, place: parseInt(prize), group: groupNumbers });
+      } else if (type === "edit") {
+        const groupId = document.getElementById('editGroupId').value;
+        try {
+          await window.update_group(house_name, { id: parseInt(groupId), hour, place: parseInt(prize), group: groupNumbers });
+        } catch { return }
+      }
+
+      window.get_groups(house_name);
+      bootstrap.Modal.getInstance(document.getElementById('createGroupModal')).hide();
+    });
+
+    async function edit_group(element) {
+      const columns = element.parentElement.parentElement.children
+      const id = element.id
+      const hour = columns[0].innerHTML
+      const place = columns[1].innerHTML
+      const group = columns[2].innerHTML
+
+      openGroupForm("edit", { id, hour, place, group })
+    }
+  </script>
+</body>
+
+</html>
